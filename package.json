@@ -1,3 +1,17 @@
 {
-  "main": "index.js"
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack index.js"
+  },
+  "devDependencies": {
+    "webpack": "^4.39.3",
+    "webpack-cli": "^3.3.7"
+  },
+  "dependencies": {
+    "buffer": "^5.4.2",
+    "canvas": "^2.6.0",
+    "chart.js": "^2.8.0",
+    "chartjs-node-canvas": "^2.4.0",
+    "pngjs": "^3.4.0"
+  }
 }
