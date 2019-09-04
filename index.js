@@ -1,10 +1,9 @@
-const { PNG } = require('pngjs/browser');
 const chartjs = require('chart.js');
 const { CanvasRenderService } = require('chartjs-node-canvas');
 
 const from = '2019-09-30T10%3A00%3A00%2B00%3A00';
 const until = '2019-11-01T12%3A00%3A00%2B00%3A00';
-const target = 5;
+const target = 4;
 const scale = 200;
 
 addEventListener('fetch', event => {
@@ -12,6 +11,11 @@ addEventListener('fetch', event => {
 });
 
 const sanitizeUsername = username => username.replace('/', '');
+
+const getGraphUrl = prCount => {
+    const count = prCount > target ? target : prCount;
+    return `hacktobot.jojon3s.workers.dev/contributions-${count}.png`;
+}
 
 const getGithubOpenedIssues = async user => {
     const url = `https://api.github.com/search/issues?q=-label:invalid+created:${from}..${until}+type:pr+is:public+author:${user}&per_page=300`;
@@ -25,12 +29,19 @@ const getGithubOpenedIssues = async user => {
 }
 
 const createContributionChart = async prCount => {
+    const count = prCount > target ? target : prCount;
+    const colourList = [];
+    const dataPoints = [];
+    for(let pr = 1; pr<= count; pr++) {
+        colourList.push(colours[pr - 1]);
+        dataPoints.push(1);
+    }
     const chartConfig = {
         type: 'doughnut',
         data: {
             datasets: [ {
-                data: prCount >= target ? [ prCount ] : [ prCount, target - prCount ] ,
-                backgroundColor: ['#28A3AF', '#C0BFC0'],
+                data: [ ...dataPoints, target - count ] ,
+                backgroundColor: [...colourList, '#C0BFC0'],
                 borderColor: '#fff',
                 borderWidth: 10
             } ]
@@ -69,5 +80,8 @@ handleRequest = async (request) => {
 
     const user = sanitizeUsername(searchParams.get('user'));
     const { total_count } = await getGithubOpenedIssues(user);
-    return new Response(getContributionResponse(total_count), { status: 200 });
+    return new Response(JSON.stringify({
+        text: getContributionResponse(total_count),
+        chartUrl: getGraphUrl(total_count)
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
