@@ -6,11 +6,11 @@ const until = '2019-11-01T12%3A00%3A00%2B00%3A00';
 const target = 4;
 const scale = 200;
 
+const { BOT_NAME, TOKEN } = require('./bot-config.json');
+
 addEventListener('fetch', event => {
     event.respondWith(handleRequest(event.request))
 });
-
-const sanitizeUsername = username => username.replace('/', '');
 
 const getGraphUrl = prCount => {
     const count = prCount > target ? target : prCount;
@@ -63,25 +63,47 @@ const getContributionResponse = prCount => {
     return responseText;
 }
 
+buildSlackbotResponse = (message, chartUrl) => JSON.stringify([
+    {
+        type: 'section',
+        text: {
+            type: 'mrkdwn',
+            text: message
+        },
+        accessory: {
+            type: 'image',
+            image_url: chartUrl,
+            alt_text: 'Contributions Chart'
+        }
+    }
+]);
+
 handleRequest = async (request) => {
     const { pathname, searchParams } = new URL(request.url);
 
-    let lastSegment = pathname.substring(pathname.lastIndexOf('/'));
-    lastSegment = lastSegment.replace('/', '');
-    if (lastSegment.includes('.png')) {
-        const { imageData } = require('./imageData')
-        const prCount = lastSegment.match(/contributions\-(.*?).png/)[1];
-        const img = (imageData[prCount] || imageData[0]).data;
-        const buff = new Buffer(img);
-        return new Response(buff, { status: 200, headers: { 'Content-Type': 'image/png' } });
+    if (request.method !== 'POST') {
+        let lastSegment = pathname.substring(pathname.lastIndexOf('/'));
+        lastSegment = lastSegment.replace('/', '');
+        if (lastSegment.includes('.png')) {
+            const { imageData } = require('./imageData')
+            const prCount = lastSegment.match(/contributions\-(.*?).png/)[1];
+            const img = (imageData[prCount] || imageData[0]).data;
+            const buff = new Buffer(img);
+            return new Response(buff, { status: 200, headers: { 'Content-Type': 'image/png' } });
+        }
     }
-    
-    if (!searchParams.has('user')) return new Response('Please add user search param', { status: 500 });
 
-    const user = sanitizeUsername(searchParams.get('user'));
+    const data = await request.formData();
+
+    if (data.get('token') !== TOKEN) return new Response('Invalid token', { status: 403 });
+    if (!data.get('user')) return new Response('Please add user search param', { status: 500 });
+
+    const user = data.get('user');
     const { total_count } = await getGithubOpenedIssues(user);
-    return new Response(JSON.stringify({
-        text: getContributionResponse(total_count),
-        chartUrl: getGraphUrl(total_count)
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    
+    return new Response(buildSlackbotResponse(
+        getContributionResponse(total_count),
+        getGraphUrl(total_count)
+    ),
+    { status: 200, headers: { 'Content-Type': 'application/json' } });
 }

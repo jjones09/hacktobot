@@ -23,7 +23,10 @@ node_modules/
 # dotenv environment variables file
 .env
 
-# toml configuration file
+# toml configuration and built worker files
 wrangler.toml
 dist/
 worker/
+
+# Slack config
+bot-config.json
