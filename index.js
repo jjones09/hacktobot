@@ -14,7 +14,7 @@ addEventListener('fetch', event => {
 
 const getGraphUrl = prCount => {
     const count = prCount > target ? target : prCount;
-    return `hacktobot.jojon3s.workers.dev/contributions-${count}.png`;
+    return `https://hacktobot.jojon3s.workers.dev/contributions-${count}.png`;
 }
 
 const getGithubOpenedIssues = async user => {
@@ -63,20 +63,23 @@ const getContributionResponse = prCount => {
     return responseText;
 }
 
-buildSlackbotResponse = (message, chartUrl) => JSON.stringify([
-    {
-        type: 'section',
-        text: {
-            type: 'mrkdwn',
-            text: message
-        },
-        accessory: {
-            type: 'image',
-            image_url: chartUrl,
-            alt_text: 'Contributions Chart'
-        }
+buildSlackbotResponse = (message, chartUrl) => JSON.stringify({
+    response_type: 'in_channel',
+    blocks: [
+        {
+            type: 'section',
+            text: {
+                type: 'mrkdwn',
+                text: message
+            },
+            accessory: {
+                type: 'image',
+                image_url: chartUrl,
+                alt_text: 'Contributions Chart'
+            }
+        }]
     }
-]);
+);
 
 handleRequest = async (request) => {
     const { pathname, searchParams } = new URL(request.url);
@@ -96,9 +99,9 @@ handleRequest = async (request) => {
     const data = await request.formData();
 
     if (data.get('token') !== TOKEN) return new Response('Invalid token', { status: 403 });
-    if (!data.get('user')) return new Response('Please add user search param', { status: 500 });
+    if (!data.get('text')) return new Response('Please add user search param', { status: 500 });
 
-    const user = data.get('user');
+    const user = data.get('text');
     const { total_count } = await getGithubOpenedIssues(user);
     
     return new Response(buildSlackbotResponse(
