@@ -1,12 +1,8 @@
-const chartjs = require('chart.js');
-const { CanvasRenderService } = require('chartjs-node-canvas');
-
 const from = '2019-09-30T10%3A00%3A00%2B00%3A00';
 const until = '2019-11-01T12%3A00%3A00%2B00%3A00';
 const target = 4;
-const scale = 200;
 
-const { BOT_NAME, TOKEN } = require('./bot-config.json');
+const { TOKEN } = require('./bot-config.json');
 
 addEventListener('fetch', event => {
     event.respondWith(handleRequest(event.request))
@@ -26,33 +22,6 @@ const getGithubOpenedIssues = async user => {
     const res = await fetch(url, opts);
     const body = await res.json();
     return body;
-}
-
-const createContributionChart = async prCount => {
-    const count = prCount > target ? target : prCount;
-    const colourList = [];
-    const dataPoints = [];
-    for(let pr = 1; pr<= count; pr++) {
-        colourList.push(colours[pr - 1]);
-        dataPoints.push(1);
-    }
-    const chartConfig = {
-        type: 'doughnut',
-        data: {
-            datasets: [ {
-                data: [ ...dataPoints, target - count ] ,
-                backgroundColor: [...colourList, '#C0BFC0'],
-                borderColor: '#fff',
-                borderWidth: 10
-            } ]
-        },
-        options: {
-            rotation: 1 * Math.PI,
-            circumference: 1 * Math.PI
-        }
-    };
-    const renderService = new CanvasRenderService(scale, scale, null, null, () => chartjs);
-    return renderService.renderToBufferSync(chartConfig);
 }
 
 const getContributionResponse = prCount => {
@@ -82,7 +51,7 @@ buildSlackbotResponse = (message, chartUrl) => JSON.stringify({
 );
 
 handleRequest = async (request) => {
-    const { pathname, searchParams } = new URL(request.url);
+    const { pathname } = new URL(request.url);
 
     if (request.method !== 'POST') {
         let lastSegment = pathname.substring(pathname.lastIndexOf('/'));
